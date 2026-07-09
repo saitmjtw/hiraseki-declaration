@@ -318,7 +318,9 @@ for(let y=2024;y<=2028;y++){for(let m=1;m<=12;m++){MONTHS.push(`${y}/${String(m)
 const selMonth=document.getElementById('sel-month');
 MONTHS.forEach(m=>{const o=document.createElement('option');o.value=m;o.textContent=m;selMonth.appendChild(o);});
 const now=new Date();
-selMonth.value=`${now.getFullYear()}/${String(now.getMonth()+1).padStart(2,'0')}`;
+// Default to previous month (申報上個月)
+const prevMonth=new Date(now.getFullYear(),now.getMonth()-1,1);
+selMonth.value=`${prevMonth.getFullYear()}/${String(prevMonth.getMonth()+1).padStart(2,'0')}`;
 
 // ── 資料庫 ──
 const STORAGE_KEY='hiraseki_declaration_v3';
@@ -527,7 +529,8 @@ function loadPermitFile(input){
         if(!permitNo||!name)return;
         // Skip items already marked as sold out in government system (已售完=1)
         const iSoldOut=header.indexOf('已售完');
-        if(iSoldOut>=0&&String(row[iSoldOut]).trim()==='1')return;
+        const soldOutVal=row[iSoldOut];
+        if(iSoldOut>=0&&(soldOutVal===1||soldOutVal==='1'||String(soldOutVal).trim()==='1'))return;
         // Skip items whose clearance date is after the selected month
         const iRelease=header.indexOf('放行日期');
         if(iRelease>=0&&row[iRelease]){
@@ -541,6 +544,11 @@ function loadPermitFile(input){
             const d=parseInt(parts[2]);
             if(y<1911) y=y+1911; // 民國 to 西元
             releaseDate=new Date(y,m-1,d);
+          }else if(releaseStr.includes('-')){
+            const dp=releaseStr.split('-');
+            let y=parseInt(dp[0]);
+            if(y<1911) y=y+1911;
+            releaseDate=new Date(y,parseInt(dp[1])-1,parseInt(dp[2]));
           }else{
             releaseDate=new Date(releaseStr);
           }
