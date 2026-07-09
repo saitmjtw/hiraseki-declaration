@@ -532,10 +532,21 @@ function loadPermitFile(input){
         const iRelease=header.indexOf('放行日期');
         if(iRelease>=0&&row[iRelease]){
           const releaseStr=String(row[iRelease]).trim();
-          const releaseDate=new Date(releaseStr);
-          if(!isNaN(releaseDate)){
+          // Support both 民國 (e.g. 115/05/01) and Western year (e.g. 2026/05/01)
+          let releaseDate=null;
+          const parts=releaseStr.split('/');
+          if(parts.length===3){
+            let y=parseInt(parts[0]);
+            const m=parseInt(parts[1]);
+            const d=parseInt(parts[2]);
+            if(y<1911) y=y+1911; // 民國 to 西元
+            releaseDate=new Date(y,m-1,d);
+          }else{
+            releaseDate=new Date(releaseStr);
+          }
+          if(releaseDate&&!isNaN(releaseDate)){
             const [moYear,moMonth]=mo.split('/').map(Number);
-            const monthEnd=new Date(moYear,moMonth,0); // last day of selected month
+            const monthEnd=new Date(moYear,moMonth,0);
             if(releaseDate>monthEnd)return;
           }
         }
