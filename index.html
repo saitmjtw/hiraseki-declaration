@@ -592,6 +592,18 @@ function deleteRecord(id){
   DB.records=DB.records.filter(r=>r.id!==id);autoSave();renderAll();
 }
 
+function deleteSelectedRecords(){
+  const checked=[...document.querySelectorAll('.rec-chk:checked')].map(c=>parseInt(c.dataset.id));
+  if(!checked.length){alert('請先勾選要刪除的項目');return;}
+  if(!confirm(`確定刪除勾選的 ${checked.length} 筆記錄？`))return;
+  DB.records=DB.records.filter(r=>!checked.includes(r.id));
+  autoSave();renderAll();
+}
+
+function toggleAllRecords(el){
+  document.querySelectorAll('.rec-chk').forEach(c=>c.checked=el.checked);
+}
+
 function updateBatch(id,val){
   const r=DB.records.find(x=>x.id===id);if(r){r.batchNo=val;autoSave();}
 }
@@ -604,19 +616,23 @@ function renderPermitList(){
   const missingBatch=recs.filter(r=>!r.batchNo).length;
   let warn='';
   if(missingBatch)warn=`<div class="msg msg-warn" style="margin-bottom:10px"><i class="ti ti-alert-triangle" style="flex-shrink:0"></i>有 ${missingBatch} 筆尚未填寫 Invoice 批號，匯出申報 XLS 前請補齊。</div>`;
-  let html=warn+`<table style="table-layout:fixed"><colgroup><col style="width:28px"><col style="width:14%"><col style="width:13%"><col><col style="width:130px"><col style="width:65px"><col style="width:65px"><col style="width:65px"><col style="width:80px"><col style="width:28px"></colgroup>
-  <thead><tr><th>#</th><th>許可通知號碼</th><th>報單號碼</th><th>品項名稱</th><th>Invoice 批號</th><th style="text-align:right">進口(cs)</th><th style="text-align:right">已出(cs)</th><th style="text-align:right">庫存(cs)</th><th>狀態</th><th></th></tr></thead><tbody>`;
-  recs.forEach(r=>{
+  const deleteBtn=`<button class="btn btn-sm btn-danger" onclick="deleteSelectedRecords()" style="margin-left:8px"><i class="ti ti-trash" style="font-size:11px"></i> 刪除勾選</button>`;
+  let html=warn+`<div style="display:flex;align-items:center;justify-content:flex-end;margin-bottom:8px;gap:6px"><span style="font-size:11px;color:var(--text3)">勾選後可批次刪除</span>${deleteBtn}</div>`;
+  html+=`<table style="table-layout:fixed"><colgroup><col style="width:28px"><col style="width:32px"><col style="width:28px"><col style="width:13%"><col style="width:12%"><col><col style="width:120px"><col style="width:60px"><col style="width:60px"><col style="width:60px"><col style="width:75px"><col style="width:28px"></colgroup>
+  <thead><tr><th><input type="checkbox" onchange="toggleAllRecords(this)"></th><th style="text-align:center;color:var(--text3)">No.</th><th style="color:var(--text2)">項次</th><th>許可通知號碼</th><th>報單號碼</th><th>品項名稱</th><th>Invoice 批號</th><th style="text-align:right">進口(cs)</th><th style="text-align:right">已出(cs)</th><th style="text-align:right">庫存(cs)</th><th>狀態</th><th></th></tr></thead><tbody>`;
+  recs.forEach((r,idx)=>{
     const shipped=getShipped(r.id);
     const rem=parseFloat((r.totalCs-shipped).toFixed(3));
     const sold=isSoldOut(r);
     let status=sold?'<span class="sold-pill"><i class="ti ti-check" style="font-size:10px"></i>已售完</span>':shipped>0?'<span class="badge badge-warn">部分出貨</span>':'<span class="badge badge-gray">未出貨</span>';
     html+=`<tr class="${sold?'sold-out-row':''}">
-      <td style="color:var(--text3)">${r.itemNo}</td>
+      <td><input type="checkbox" class="rec-chk" data-id="${r.id}"></td>
+      <td style="text-align:center;font-size:11px;color:var(--text3)">${idx+1}</td>
+      <td style="text-align:center;font-size:11px;color:var(--text2)">${r.itemNo}</td>
       <td style="font-family:monospace;font-size:10px;word-break:break-all">${r.permitNo}</td>
       <td style="font-family:monospace;font-size:10px;word-break:break-all">${r.declNo||'—'}</td>
       <td style="font-weight:500;font-size:12px">${r.name}</td>
-      <td><input type="text" value="${r.batchNo||''}" placeholder="CITY 20260404S" style="font-size:11px;padding:3px 6px" oninput="updateBatch(${r.id},this.value)" class="${!r.batchNo?'border-warn':''}"></td>
+      <td><input type="text" value="${r.batchNo||''}" placeholder="CITY 20260404S" style="font-size:11px;padding:3px 6px" oninput="updateBatch(${r.id},this.value)"></td>
       <td style="text-align:right">${r.totalCs}</td>
       <td style="text-align:right;color:${shipped>0?'var(--success-text)':'var(--text3)'}">${shipped.toFixed(2)}</td>
       <td style="text-align:right;color:${rem>0?'var(--warn-text)':'var(--text3)'}">${rem.toFixed(2)}</td>
