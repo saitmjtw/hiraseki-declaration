@@ -1,0 +1,1133 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>非追申報管理工具</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#fff;--bg2:#f8f8f7;--bg3:#f2f1ee;
+  --text:#1a1a1a;--text2:#666;--text3:#999;
+  --border:#e0ddd8;--border2:#ccc;
+  --info-bg:#e6f1fb;--info-text:#0c447c;--info-border:#b5d4f4;
+  --success-bg:#eaf3de;--success-text:#27500a;--success-border:#c0dd97;
+  --warn-bg:#faeeda;--warn-text:#633806;--warn-border:#fac775;
+  --danger-bg:#fcebeb;--danger-text:#791f1f;--danger-border:#f7c1c1;
+  --radius:8px;--radius-lg:12px;
+}
+@media(prefers-color-scheme:dark){
+  :root{
+    --bg:#1e1e1c;--bg2:#262624;--bg3:#2e2e2b;
+    --text:#f0ede8;--text2:#aaa;--text3:#666;
+    --border:#3a3a36;--border2:#555;
+    --info-bg:#042c53;--info-text:#b5d4f4;--info-border:#185fa5;
+    --success-bg:#173404;--success-text:#c0dd97;--success-border:#3b6d11;
+    --warn-bg:#412402;--warn-text:#fac775;--warn-border:#854f0b;
+    --danger-bg:#501313;--danger-text:#f7c1c1;--danger-border:#a32d2d;
+  }
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg3);color:var(--text);font-size:14px;line-height:1.6}
+.app{max-width:1200px;margin:0 auto;padding:24px 16px}
+.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:10px}
+.topbar h1{font-size:18px;font-weight:500}
+.topbar-right{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.month-select{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text2)}
+.month-select select{font-size:13px;padding:4px 8px;border-radius:var(--radius);border:0.5px solid var(--border2);background:var(--bg);color:var(--text)}
+.tabs{display:flex;gap:0;border-bottom:0.5px solid var(--border);margin-bottom:20px;overflow-x:auto}
+.tab{padding:8px 16px;font-size:13px;font-weight:500;color:var(--text2);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-0.5px;white-space:nowrap}
+.tab.active{color:var(--info-text);border-bottom-color:var(--info-text)}
+.tab:hover:not(.active){color:var(--text)}
+.panel{display:none}.panel.active{display:block}
+.card{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:16px 20px;margin-bottom:16px}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px}
+.card-title{font-size:14px;font-weight:500}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:20px}
+.stat{background:var(--bg2);border-radius:var(--radius);padding:12px 14px}
+.stat-label{font-size:11px;color:var(--text2);margin-bottom:4px}
+.stat-val{font-size:22px;font-weight:500}
+.stat-sub{font-size:11px;color:var(--text3);margin-top:2px}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:0 12px;height:32px;border-radius:var(--radius);border:0.5px solid var(--border2);background:transparent;font-size:12px;font-weight:500;cursor:pointer;color:var(--text);transition:background 0.12s}
+.btn:hover{background:var(--bg2)}.btn:active{transform:scale(0.98)}
+.btn-primary{background:var(--info-bg);border-color:var(--info-border);color:var(--info-text)}
+.btn-primary:hover{opacity:0.85;background:var(--info-bg)}
+.btn-sm{height:26px;padding:0 8px;font-size:11px}
+.btn-danger{background:var(--danger-bg);border-color:var(--danger-border);color:var(--danger-text)}
+.btn-success{background:var(--success-bg);border-color:var(--success-border);color:var(--success-text)}
+table{width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed}
+th{padding:7px 10px;text-align:left;color:var(--text2);font-weight:500;border-bottom:0.5px solid var(--border);background:var(--bg2);white-space:nowrap;overflow:hidden}
+td{padding:8px 10px;border-bottom:0.5px solid var(--border);vertical-align:middle;overflow:hidden;text-overflow:ellipsis}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--bg2)}
+.badge{display:inline-block;padding:2px 7px;border-radius:10px;font-size:10px;font-weight:500;white-space:nowrap}
+.badge-success{background:var(--success-bg);color:var(--success-text)}
+.badge-warn{background:var(--warn-bg);color:var(--warn-text)}
+.badge-danger{background:var(--danger-bg);color:var(--danger-text)}
+.badge-gray{background:var(--bg3);color:var(--text2)}
+.sold-out-row td{opacity:0.55}
+.match-row{display:grid;grid-template-columns:1fr 24px 1fr 60px;gap:8px;align-items:start;padding:10px 12px;border-bottom:0.5px solid var(--border);font-size:12px}
+.match-row:last-child{border-bottom:none}
+.match-row select,.match-sel{font-size:11px;padding:3px 6px;border-radius:var(--radius);border:0.5px solid var(--border2);background:var(--bg);color:var(--text);width:100%}
+.spinner{width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--info-text);border-radius:50%;animation:spin 0.7s linear infinite;flex-shrink:0;display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+.msg{padding:10px 14px;border-radius:var(--radius);font-size:12px;margin:8px 0;display:flex;align-items:flex-start;gap:8px}
+.msg-info{background:var(--info-bg);color:var(--info-text);border:0.5px solid var(--info-border)}
+.msg-warn{background:var(--warn-bg);color:var(--warn-text);border:0.5px solid var(--warn-border)}
+.msg-success{background:var(--success-bg);color:var(--success-text);border:0.5px solid var(--success-border)}
+.progress-bar{height:4px;background:var(--bg3);border-radius:2px;overflow:hidden;margin-top:5px}
+.progress-fill{height:100%;background:var(--success-text);border-radius:2px;transition:width 0.3s}
+.divider{border:none;border-top:0.5px solid var(--border);margin:16px 0}
+input[type=text],input[type=number]{padding:5px 8px;border-radius:var(--radius);border:0.5px solid var(--border2);background:var(--bg);color:var(--text);font-size:12px;width:100%}
+.inv-row-header{background:var(--bg2);font-weight:500;color:var(--text2)}
+.empty-state{text-align:center;padding:40px 20px;color:var(--text3)}
+.empty-state i{font-size:36px;display:block;margin-bottom:12px;opacity:0.4}
+.tooltip-text{font-size:10px;color:var(--text3);margin-top:2px}
+.save-bar{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--bg2);border-radius:var(--radius);font-size:12px;color:var(--text2);margin-bottom:16px}
+.sold-pill{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:500;background:var(--success-bg);color:var(--success-text);border:0.5px solid var(--success-border)}
+.partner-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px}
+.partner-block{background:var(--bg2);border-radius:var(--radius);padding:10px 12px}
+.partner-block label{font-size:11px;color:var(--text2);display:block;margin-bottom:4px}
+.partner-block select{font-size:11px;padding:4px 6px;border-radius:var(--radius);border:0.5px solid var(--border2);background:var(--bg);color:var(--text);width:100%}
+.section-title{font-size:12px;font-weight:500;color:var(--text2);margin:12px 0 6px;text-transform:uppercase;letter-spacing:0.05em}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <h1><i class="ti ti-clipboard-list" style="font-size:18px;vertical-align:-2px;margin-right:6px"></i>非追申報管理工具</h1>
+    <div class="topbar-right">
+      <div class="month-select">
+        <i class="ti ti-calendar"></i> 申報月份
+        <select id="sel-month" onchange="changeMonth()"></select>
+      </div>
+      <button class="btn btn-sm" onclick="saveData()"><i class="ti ti-device-floppy"></i> 儲存</button>
+      <button class="btn btn-sm" onclick="exportState()"><i class="ti ti-archive"></i> 備份</button>
+      <button class="btn btn-sm" onclick="document.getElementById('file-restore').click()"><i class="ti ti-upload"></i> 還原</button>
+      <input type="file" id="file-restore" accept=".json" style="display:none" onchange="importState(this)">
+      <button class="btn btn-sm btn-primary" onclick="exportDeclarationXLS()"><i class="ti ti-download"></i> 匯出申報XLS</button>
+    </div>
+  </div>
+
+  <div id="save-indicator" class="save-bar" style="display:none">
+    <i class="ti ti-check" style="color:var(--success-text)"></i>
+    <span id="save-msg">已儲存</span>
+    <span style="margin-left:auto;font-size:11px" id="save-time"></span>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="stat-label">本月進口記錄</div><div class="stat-val" id="st-permits">0</div><div class="stat-sub">筆</div></div>
+    <div class="stat"><div class="stat-label">本月出貨單</div><div class="stat-val" id="st-orders">0</div><div class="stat-sub">張已處理</div></div>
+    <div class="stat"><div class="stat-label">本月待申報</div><div class="stat-val" id="st-pending">0</div><div class="stat-sub">有出貨品項</div></div>
+    <div class="stat"><div class="stat-label">已售完品項</div><div class="stat-val" id="st-soldout">0</div><div class="stat-sub">需在申報網站標記</div></div>
+    <div class="stat"><div class="stat-label">有庫存品項</div><div class="stat-val" id="st-stock">0</div><div class="stat-sub">跨月延續</div></div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('tab-import')">進口記錄</div>
+    <div class="tab" onclick="switchTab('tab-delivery')">上傳出貨單</div>
+    <div class="tab" onclick="switchTab('tab-manual')">手動出貨登錄</div>
+    <div class="tab" onclick="switchTab('tab-declare')">本月申報清單</div>
+    <div class="tab" onclick="switchTab('tab-stock')">庫存／已售完</div>
+    <div class="tab" onclick="switchTab('tab-partners')">業者對照表</div>
+  </div>
+
+  <!-- 進口記錄 -->
+  <div id="tab-import" class="panel active">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">匯入本月非追未申報清單</span>
+        <button class="btn btn-primary" onclick="document.getElementById('file-permit').click()">
+          <i class="ti ti-upload"></i> 上傳 Excel
+        </button>
+        <input type="file" id="file-permit" accept=".xlsx,.xls,.csv" onchange="loadPermitFile(this)">
+      </div>
+      <div class="msg msg-info"><i class="ti ti-info-circle" style="flex-shrink:0;margin-top:1px"></i>
+        從非追網站匯出「本月未申報項目」Excel 後上傳。匯入後請為每筆記錄填寫 Invoice 批號（申報 XLS 必填）。
+      </div>
+      <div id="permit-list"><div class="empty-state"><i class="ti ti-file-import"></i>尚未匯入本月清單</div></div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">手動新增進口記錄</span>
+        <button class="btn btn-sm" onclick="toggleAddForm()"><i class="ti ti-plus"></i> 新增</button>
+      </div>
+      <div id="add-form" style="display:none">
+        <div style="display:grid;grid-template-columns:1fr 1fr 80px;gap:10px;margin-bottom:10px">
+          <div><div style="font-size:11px;color:var(--text2);margin-bottom:4px">許可通知號碼</div><input type="text" id="f-permit" placeholder="IFD14L..."></div>
+          <div><div style="font-size:11px;color:var(--text2);margin-bottom:4px">報單號碼</div><input type="text" id="f-decl" placeholder="AA 1555..."></div>
+          <div><div style="font-size:11px;color:var(--text2);margin-bottom:4px">項次</div><input type="number" id="f-item" placeholder="1" min="1"></div>
+        </div>
+        <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr;gap:10px;margin-bottom:10px">
+          <div><div style="font-size:11px;color:var(--text2);margin-bottom:4px">品項名稱</div><input type="text" id="f-name" placeholder="Sweet potato ibaraki"></div>
+          <div><div style="font-size:11px;color:var(--text2);margin-bottom:4px">Invoice 批號</div><input type="text" id="f-batch" placeholder="CITY 20260404S"></div>
+          <div><div style="font-size:11px;color:var(--text2);margin-bottom:4px">進口總量 (cs)</div><input type="number" id="f-cs" placeholder="1040" step="0.01"></div>
+          <div><div style="font-size:11px;color:var(--text2);margin-bottom:4px">每箱淨重 (kg)</div><input type="number" id="f-kgcs" placeholder="5.00" step="0.01"></div>
+          <div><div style="font-size:11px;color:var(--text2);margin-bottom:4px">進口總重 (kg)</div><input type="number" id="f-kg" placeholder="5200" step="0.01"></div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-primary btn-sm" onclick="addRecord()"><i class="ti ti-check"></i> 儲存</button>
+          <button class="btn btn-sm" onclick="toggleAddForm()">取消</button>
+        </div>
+        <hr class="divider">
+      </div>
+      <div id="manual-list"></div>
+    </div>
+  </div>
+
+  <!-- 出貨單 (LOPIA) -->
+  <div id="tab-delivery" class="panel">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">上傳出貨單（LOPIA）</span>
+        <button class="btn btn-primary" onclick="document.getElementById('file-delivery').click()">
+          <i class="ti ti-upload"></i> 選擇出貨單 Excel
+        </button>
+        <input type="file" id="file-delivery" accept=".xlsx,.xls,.csv" onchange="loadDeliveryFile(this)">
+      </div>
+      <div class="msg msg-info"><i class="ti ti-info-circle" style="flex-shrink:0;margin-top:1px"></i>
+        AI 解析出貨單品項並比對進口記錄。確認後可設定物流業者與下游業者。
+      </div>
+      <div id="delivery-status"></div>
+      <div id="delivery-match"></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">本月已處理出貨單</span></div>
+      <div id="delivery-history"><div class="empty-state"><i class="ti ti-truck"></i>尚未上傳出貨單</div></div>
+    </div>
+  </div>
+
+  <!-- 手動出貨登錄（非 LOPIA） -->
+  <div id="tab-manual" class="panel">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">手動出貨登錄（其他客戶）</span>
+        <button class="btn btn-primary" onclick="showManualDeliveryForm()"><i class="ti ti-plus"></i> 新增出貨</button>
+      </div>
+      <div class="msg msg-info"><i class="ti ti-info-circle" style="flex-shrink:0;margin-top:1px"></i>
+        針對沒有出貨單的客戶（非 LOPIA），直接輸入出貨數量並指定業者。
+      </div>
+      <div id="manual-delivery-form" style="display:none">
+        <hr class="divider">
+        <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px;margin-bottom:10px">
+          <div><div style="font-size:11px;color:var(--text2);margin-bottom:4px">品項（進口記錄）</div>
+            <select id="md-record" class="match-sel" style="width:100%"></select>
+          </div>
+          <div><div style="font-size:11px;color:var(--text2);margin-bottom:4px">數量 (cs/pce)</div><input type="number" id="md-cs" placeholder="100" step="0.01" min="0"></div>
+          <div><div style="font-size:11px;color:var(--text2);margin-bottom:4px">淨重 (kg)　<span style="color:var(--text3)">留空自動計算</span></div><input type="number" id="md-kg" placeholder="自動" step="0.01" min="0"></div>
+        </div>
+        <div style="margin-bottom:10px">
+          <div style="font-size:11px;color:var(--text2);margin-bottom:6px">申報類型</div>
+          <div style="display:flex;gap:12px">
+            <label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer">
+              <input type="radio" name="md-type" value="delivery" checked onchange="toggleMdType()"> 出貨（下游業者）
+            </label>
+            <label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer">
+              <input type="radio" name="md-type" value="self" onchange="toggleMdType()"> 廠商自用
+            </label>
+          </div>
+        </div>
+        <div id="md-delivery-section">
+          <div class="partner-grid">
+            <div class="partner-block"><label>物流業者（F-xxx）</label><select id="md-logistics"></select></div>
+            <div class="partner-block"><label>下游業者（R-xxx 等）</label><select id="md-downstream"></select></div>
+          </div>
+        </div>
+        <div id="md-self-section" style="display:none">
+          <div style="background:var(--bg2);border-radius:var(--radius);padding:10px 12px">
+            <div style="font-size:11px;color:var(--text2);margin-bottom:8px">自用類別（可複選）</div>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:8px">
+              <label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer"><input type="checkbox" id="md-sc1"> 樣品</label>
+              <label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer"><input type="checkbox" id="md-sc2"> 贊助品</label>
+              <label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer"><input type="checkbox" id="md-sc3"> 贈品</label>
+              <label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer"><input type="checkbox" id="md-sc4"> 檢體</label>
+              <label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer"><input type="checkbox" id="md-sc5"> 展覽</label>
+              <label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer"><input type="checkbox" id="md-sc6"> 研發測試品</label>
+              <label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer"><input type="checkbox" id="md-sc7"> 耗損品</label>
+              <label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer"><input type="checkbox" id="md-sc8"> 其它</label>
+            </div>
+            <div style="font-size:11px;color:var(--text3)">自用類別代碼：<span id="md-sc-preview" style="font-family:monospace;color:var(--info-text)">00000000</span></div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:12px">
+          <button class="btn btn-primary btn-sm" onclick="saveManualDelivery()"><i class="ti ti-check"></i> 儲存</button>
+          <button class="btn btn-sm" onclick="hideManualDeliveryForm()">取消</button>
+        </div>
+        <hr class="divider">
+      </div>
+      <div id="manual-delivery-list"><div class="empty-state"><i class="ti ti-edit"></i>尚未手動登錄出貨</div></div>
+    </div>
+  </div>
+
+  <!-- 申報清單 -->
+  <div id="tab-declare" class="panel">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title" id="declare-title">本月申報清單</span>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-sm" onclick="copyDeclare()"><i class="ti ti-copy"></i> 複製</button>
+          <button class="btn btn-sm btn-primary" onclick="exportDeclarationXLS()"><i class="ti ti-download"></i> 匯出申報XLS</button>
+        </div>
+      </div>
+      <div id="declare-list"><div class="empty-state"><i class="ti ti-clipboard-check"></i>上傳出貨單並確認對應後，申報清單自動產生</div></div>
+    </div>
+  </div>
+
+  <!-- 庫存 / 已售完 -->
+  <div id="tab-stock" class="panel">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">庫存追蹤 ／ 已售完標示</span>
+        <select id="stock-filter" onchange="renderStock()" style="font-size:11px;padding:3px 6px;border-radius:var(--radius);border:0.5px solid var(--border2);background:var(--bg);color:var(--text)">
+          <option value="all">全部</option>
+          <option value="soldout">已售完</option>
+          <option value="instock">有庫存</option>
+          <option value="pending">未出貨</option>
+        </select>
+      </div>
+      <div class="msg msg-warn"><i class="ti ti-alert-triangle" style="flex-shrink:0;margin-top:1px"></i>
+        庫存歸零自動標示「已售完」，請對照申報網站手動勾選銷售狀態。
+      </div>
+      <div id="stock-list"><div class="empty-state"><i class="ti ti-box"></i>尚無庫存資料</div></div>
+    </div>
+  </div>
+
+  <!-- 業者對照表 -->
+  <div id="tab-partners" class="panel">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">業者對照表</span>
+        <button class="btn btn-primary" onclick="document.getElementById('file-partners').click()">
+          <i class="ti ti-upload"></i> 匯入申報系統匯出 XLS
+        </button>
+        <input type="file" id="file-partners" accept=".xlsx,.xls,.csv" onchange="loadPartnersFile(this)">
+      </div>
+      <div class="msg msg-info"><i class="ti ti-info-circle" style="flex-shrink:0;margin-top:1px"></i>
+        從申報系統匯出「交易對象」XLS 後上傳，自動帶入物流業者（F-xxx）和下游業者（R-xxx）清單。
+      </div>
+      <div id="partners-list"><div class="empty-state"><i class="ti ti-users"></i>尚未匯入業者對照表</div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── 月份初始化 ──
+const MONTHS=[];
+for(let y=2024;y<=2028;y++){for(let m=1;m<=12;m++){MONTHS.push(`${y}/${String(m).padStart(2,'0')}`)}}
+const selMonth=document.getElementById('sel-month');
+MONTHS.forEach(m=>{const o=document.createElement('option');o.value=m;o.textContent=m;selMonth.appendChild(o);});
+const now=new Date();
+selMonth.value=`${now.getFullYear()}/${String(now.getMonth()+1).padStart(2,'0')}`;
+
+// ── 資料庫 ──
+const STORAGE_KEY='hiraseki_declaration_v3';
+const GAS_URL='https://script.google.com/macros/s/AKfycbxhuavHGjqbE694KYBCmV1VsQhRMnBDTChJ-7v9hUTQVPCGZ7QOl82YAtG_s6U7rm2w_A/exec';
+let DB={records:[],deliveries:[],manualDeliveries:[],mappings:{},manualSoldOut:{},partners:[],nextId:1};
+let _cloudSaveTimer=null;
+
+// ── 持久化（localStorage + Google Drive）──
+async function loadData(){
+  // First load from localStorage as fast fallback
+  try{
+    const raw=localStorage.getItem(STORAGE_KEY);
+    if(raw){DB=JSON.parse(raw);}
+  }catch(e){}
+  // Then try to load from Google Drive (cloud takes priority)
+  showSaveBar('正在從雲端載入資料...');
+  try{
+    const resp=await fetch(GAS_URL,{method:'GET',redirect:'follow'});
+    const text=await resp.text();
+    if(text&&text!=='{}'){
+      const cloud=JSON.parse(text);
+      // Use cloud data if it has records (prefer cloud over local)
+      if(cloud.nextId){
+        DB=cloud;
+        localStorage.setItem(STORAGE_KEY,JSON.stringify(DB));
+        showSaveBar('✓ 雲端資料已載入');
+      }else{
+        showSaveBar('✓ 本機資料已載入');
+      }
+    }else{
+      showSaveBar('✓ 本機資料已載入（雲端尚無資料）');
+    }
+  }catch(e){
+    showSaveBar('無法連線雲端，使用本機資料');
+  }
+  renderAll();
+}
+
+async function saveData(){
+  // Save to localStorage immediately
+  try{localStorage.setItem(STORAGE_KEY,JSON.stringify(DB));}catch(e){}
+  // Save to Google Drive (debounced)
+  clearTimeout(_cloudSaveTimer);
+  _cloudSaveTimer=setTimeout(async()=>{
+    try{
+      showSaveBar('正在同步到雲端...');
+      await fetch(GAS_URL,{
+        method:'POST',
+        body:JSON.stringify(DB),
+        redirect:'follow'
+      });
+      showSaveBar('✓ 已同步到雲端');
+    }catch(e){
+      showSaveBar('⚠ 雲端同步失敗，資料已存本機');
+    }
+  },1500);
+}
+
+function exportState(){
+  const blob=new Blob([JSON.stringify(DB,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download=`非追申報備份_${new Date().toISOString().slice(0,10)}.json`;a.click();
+}
+function importState(input){
+  const file=input.files[0];if(!file)return;
+  const r=new FileReader();
+  r.onload=e=>{
+    try{
+      DB=JSON.parse(e.target.result);
+      saveData();renderAll();showSaveBar('備份還原成功');
+    }catch(err){alert('還原失敗');}
+  };
+  r.readAsText(file);input.value='';
+}
+function showSaveBar(msg){
+  const bar=document.getElementById('save-indicator');
+  document.getElementById('save-msg').textContent=msg;
+  document.getElementById('save-time').textContent=new Date().toLocaleTimeString('zh-TW');
+  bar.style.display='flex';clearTimeout(window._saveTimer);
+  window._saveTimer=setTimeout(()=>bar.style.display='none',3000);
+}
+function autoSave(){saveData();}
+
+// ── 月份 / Tab ──
+function getMonth(){return selMonth.value;}
+function changeMonth(){renderAll();}
+function switchTab(id){
+  const panels=['tab-import','tab-delivery','tab-manual','tab-declare','tab-stock','tab-partners'];
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',panels[i]===id));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active',p.id===id));
+  renderAll();
+}
+
+// ── 業者工具函式 ──
+function getLogisticsPartners(){return DB.partners.filter(p=>p.rel==='101000'||p.rel==='001000');}
+function getDownstreamPartners(){return DB.partners.filter(p=>p.rel==='100000'||p.rel==='110000'||p.rel==='111000');}
+function partnerName(code){const p=DB.partners.find(x=>x.code===code);return p?`${p.code} ${p.name}`:code||'—';}
+
+function buildPartnerSelect(id,type,selected=''){
+  const list=type==='logistics'?getLogisticsPartners():getDownstreamPartners();
+  let html=`<select id="${id}" class="match-sel"><option value="">— 不填 —</option>`;
+  list.forEach(p=>{html+=`<option value="${p.code}"${p.code===selected?' selected':''}>${p.code}　${p.name}</option>`;});
+  html+='</select>';return html;
+}
+
+// ── Stats ──
+function isSoldOut(r){
+  if(DB.manualSoldOut[r.id])return true;
+  const shipped=getShipped(r.id);
+  return r.totalCs>0&&shipped>=r.totalCs;
+}
+function getShipped(recordId){
+  let t=0;
+  DB.deliveries.forEach(d=>{d.lines.forEach(l=>{if(l.recordId===recordId)t+=l.cs;});});
+  DB.manualDeliveries.forEach(d=>{if(d.recordId===recordId)t+=d.cs;});
+  return t;
+}
+// Self-use counts toward inventory deduction but not toward "shipped to downstream"
+// getShipped already includes self-use via manualDeliveries
+function getMonthShipped(recordId,month){
+  let cs=0,kg=0;
+  DB.deliveries.filter(d=>d.month===month).forEach(d=>{
+    d.lines.forEach(l=>{if(l.recordId===recordId){cs+=l.cs;kg+=l.kg;}});
+  });
+  DB.manualDeliveries.filter(d=>d.month===month&&d.recordId===recordId).forEach(d=>{cs+=d.cs;kg+=d.kg;});
+  return{cs,kg};
+}
+
+function updateStats(){
+  const mo=getMonth();
+  const recs=DB.records.filter(r=>r.month===mo);
+  const devs=DB.deliveries.filter(d=>d.month===mo);
+  const manDevs=DB.manualDeliveries.filter(d=>d.month===mo);
+  let pending=0,soldout=0,stock=0;
+  DB.records.forEach(r=>{
+    const{cs}=getMonthShipped(r.id,mo);
+    if(cs>0)pending++;
+    if(isSoldOut(r))soldout++;
+    else if(r.totalCs-getShipped(r.id)>0)stock++;
+  });
+  document.getElementById('st-permits').textContent=recs.length;
+  document.getElementById('st-orders').textContent=devs.length+manDevs.length;
+  document.getElementById('st-pending').textContent=pending;
+  document.getElementById('st-soldout').textContent=soldout;
+  document.getElementById('st-stock').textContent=stock;
+}
+
+function renderAll(){updateStats();renderPermitList();renderDeliveryHistory();renderManualDeliveryList();renderDeclare();renderStock();renderPartners();}
+
+// ── 進口記錄 ──
+function parseQty(str){
+  if(!str)return 0;
+  const m=String(str).match(/[\d.]+/);
+  return m?parseFloat(m[0]):0;
+}
+function parseKg(str){
+  if(!str)return 0;
+  const m=String(str).match(/[\d.]+/);
+  return m?parseFloat(m[0]):0;
+}
+
+function loadPermitFile(input){
+  const file=input.files[0];if(!file)return;
+  const mo=getMonth();
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const wb=XLSX.read(e.target.result,{type:'array'});
+    const govSheet=wb.Sheets['產品資訊'];
+    const ws=govSheet||wb.Sheets[wb.SheetNames[0]];
+    const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+    if(!rows.length){input.value='';return;}
+    const header=rows[0].map(c=>String(c).trim());
+    const isGovFormat=header.includes('輸入許可通知號碼')&&header.includes('數量')&&header.includes('淨重');
+    let added=0;
+    if(isGovFormat){
+      // Also read 批號 sheet to get batch numbers
+      const batchMap={};
+      const batchSheet=wb.Sheets['批號'];
+      if(batchSheet){
+        const brows=XLSX.utils.sheet_to_json(batchSheet,{header:1,defval:''});
+        brows.forEach((row,i)=>{
+          if(i===0)return;
+          const bp=String(row[0]||'').trim();
+          const bi=String(row[1]||'').trim();
+          const bn=String(row[2]||'').trim();
+          if(bp&&bi&&bn)batchMap[`${bp}||${bi}`]=bn;
+        });
+      }
+      const iPermit=header.indexOf('輸入許可通知號碼');
+      const iDecl=header.indexOf('報單號碼');
+      const iItem=header.indexOf('項次');
+      const iName=header.indexOf('產品中文名稱');
+      const iEngName=header.indexOf('產品英文名稱');
+      const iQty=header.indexOf('數量');
+      const iKg=header.indexOf('淨重');
+      rows.forEach((row,i)=>{
+        if(i===0)return;
+        const permitNo=String(row[iPermit]||'').trim();
+        const declNo=String(row[iDecl]||'').replace(/\s+/g,' ').trim();
+        const itemNo=parseInt(row[iItem])||1;
+        const name=String(row[iName]||row[iEngName]||'').trim();
+        const totalCs=parseQty(row[iQty]);
+        const totalKg=parseKg(row[iKg]);
+        const kgPerCs=totalCs>0&&totalKg>0?parseFloat((totalKg/totalCs).toFixed(4)):0;
+        const batchNo=batchMap[`${permitNo}||${itemNo}`]||'';
+        if(!permitNo||!name)return;
+        // Skip items already marked as sold out in government system (已售完=1)
+        const iSoldOut=header.indexOf('已售完');
+        if(iSoldOut>=0&&String(row[iSoldOut]).trim()==='1')return;
+        // Skip items whose clearance date is after the selected month
+        const iRelease=header.indexOf('放行日期');
+        if(iRelease>=0&&row[iRelease]){
+          const releaseStr=String(row[iRelease]).trim();
+          const releaseDate=new Date(releaseStr);
+          if(!isNaN(releaseDate)){
+            const [moYear,moMonth]=mo.split('/').map(Number);
+            const monthEnd=new Date(moYear,moMonth,0); // last day of selected month
+            if(releaseDate>monthEnd)return;
+          }
+        }
+        const exists=DB.records.find(r=>r.permitNo===permitNo&&String(r.itemNo)===String(itemNo));
+        if(!exists){
+          DB.records.push({id:DB.nextId++,month:mo,permitNo,declNo,itemNo,name,batchNo,totalCs,kgPerCs,totalKg});
+          added++;
+        }
+      });
+    }else{
+      rows.forEach((row,i)=>{
+        if(i===0)return;
+        const permitNo=String(row[1]||'').trim();
+        const declNo=String(row[2]||'').trim();
+        const itemNo=row[3];
+        const name=String(row[4]||'').trim();
+        const totalCs=parseFloat(row[6])||0;
+        if(!permitNo||!name)return;
+        const exists=DB.records.find(r=>r.permitNo===permitNo&&String(r.itemNo)===String(itemNo));
+        if(!exists){
+          DB.records.push({id:DB.nextId++,month:mo,permitNo,declNo,itemNo:itemNo||1,name,batchNo:'',totalCs,kgPerCs:0,totalKg:0});
+          added++;
+        }
+      });
+    }
+    input.value='';autoSave();renderAll();
+    showSaveBar(`匯入 ${added} 筆（${isGovFormat?'政府系統格式':'管理表格式'}）`);
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function toggleAddForm(){
+  const f=document.getElementById('add-form');
+  f.style.display=f.style.display==='none'?'block':'none';
+}
+
+function addRecord(){
+  const permitNo=document.getElementById('f-permit').value.trim();
+  const declNo=document.getElementById('f-decl').value.trim();
+  const itemNo=parseInt(document.getElementById('f-item').value)||1;
+  const name=document.getElementById('f-name').value.trim();
+  const batchNo=document.getElementById('f-batch').value.trim();
+  const totalCs=parseFloat(document.getElementById('f-cs').value)||0;
+  const kgPerCs=parseFloat(document.getElementById('f-kgcs').value)||0;
+  const totalKg=parseFloat(document.getElementById('f-kg').value)||(totalCs*kgPerCs);
+  if(!permitNo||!name){alert('請填寫許可通知號碼和品項名稱');return;}
+  DB.records.push({id:DB.nextId++,month:getMonth(),permitNo,declNo,itemNo,name,batchNo,totalCs,kgPerCs,totalKg});
+  ['f-permit','f-decl','f-item','f-name','f-batch','f-cs','f-kgcs','f-kg'].forEach(id=>{document.getElementById(id).value='';});
+  toggleAddForm();autoSave();renderAll();
+}
+
+function deleteRecord(id){
+  if(!confirm('確定刪除？'))return;
+  DB.records=DB.records.filter(r=>r.id!==id);autoSave();renderAll();
+}
+
+function updateBatch(id,val){
+  const r=DB.records.find(x=>x.id===id);if(r){r.batchNo=val;autoSave();}
+}
+
+function renderPermitList(){
+  const mo=getMonth();
+  const recs=DB.records.filter(r=>r.month===mo);
+  const el=document.getElementById('permit-list');
+  if(!recs.length){el.innerHTML='<div class="empty-state"><i class="ti ti-file-import"></i>尚未匯入本月清單</div>';return;}
+  const missingBatch=recs.filter(r=>!r.batchNo).length;
+  let warn='';
+  if(missingBatch)warn=`<div class="msg msg-warn" style="margin-bottom:10px"><i class="ti ti-alert-triangle" style="flex-shrink:0"></i>有 ${missingBatch} 筆尚未填寫 Invoice 批號，匯出申報 XLS 前請補齊。</div>`;
+  let html=warn+`<table style="table-layout:fixed"><colgroup><col style="width:28px"><col style="width:14%"><col style="width:13%"><col><col style="width:130px"><col style="width:65px"><col style="width:65px"><col style="width:65px"><col style="width:80px"><col style="width:28px"></colgroup>
+  <thead><tr><th>#</th><th>許可通知號碼</th><th>報單號碼</th><th>品項名稱</th><th>Invoice 批號</th><th style="text-align:right">進口(cs)</th><th style="text-align:right">已出(cs)</th><th style="text-align:right">庫存(cs)</th><th>狀態</th><th></th></tr></thead><tbody>`;
+  recs.forEach(r=>{
+    const shipped=getShipped(r.id);
+    const rem=parseFloat((r.totalCs-shipped).toFixed(3));
+    const sold=isSoldOut(r);
+    let status=sold?'<span class="sold-pill"><i class="ti ti-check" style="font-size:10px"></i>已售完</span>':shipped>0?'<span class="badge badge-warn">部分出貨</span>':'<span class="badge badge-gray">未出貨</span>';
+    html+=`<tr class="${sold?'sold-out-row':''}">
+      <td style="color:var(--text3)">${r.itemNo}</td>
+      <td style="font-family:monospace;font-size:10px;word-break:break-all">${r.permitNo}</td>
+      <td style="font-family:monospace;font-size:10px;word-break:break-all">${r.declNo||'—'}</td>
+      <td style="font-weight:500;font-size:12px">${r.name}</td>
+      <td><input type="text" value="${r.batchNo||''}" placeholder="CITY 20260404S" style="font-size:11px;padding:3px 6px" oninput="updateBatch(${r.id},this.value)" class="${!r.batchNo?'border-warn':''}"></td>
+      <td style="text-align:right">${r.totalCs}</td>
+      <td style="text-align:right;color:${shipped>0?'var(--success-text)':'var(--text3)'}">${shipped.toFixed(2)}</td>
+      <td style="text-align:right;color:${rem>0?'var(--warn-text)':'var(--text3)'}">${rem.toFixed(2)}</td>
+      <td>${status}</td>
+      <td><button class="btn btn-sm btn-danger" onclick="deleteRecord(${r.id})"><i class="ti ti-trash" style="font-size:11px"></i></button></td>
+    </tr>`;
+  });
+  html+='</tbody></table>';
+  el.innerHTML=html;
+  document.getElementById('manual-list').innerHTML='';
+}
+
+// ── 出貨單 (LOPIA) ──
+async function loadDeliveryFile(input){
+  const file=input.files[0];if(!file)return;
+  const mo=getMonth();
+  const statusEl=document.getElementById('delivery-status');
+  const matchEl=document.getElementById('delivery-match');
+  statusEl.innerHTML='<div class="msg msg-info"><div class="spinner"></div>正在解析出貨單並進行 AI 比對...</div>';
+  matchEl.innerHTML='';
+  const ab=await file.arrayBuffer();
+  const wb=XLSX.read(ab,{type:'array'});
+  const ws=wb.Sheets['總表']||wb.Sheets[wb.SheetNames[0]];
+  const csv=XLSX.utils.sheet_to_csv(ws);
+  if(!DB.records.length){
+    statusEl.innerHTML='<div class="msg msg-warn"><i class="ti ti-alert-triangle"></i>請先匯入本月進口清單</div>';
+    input.value='';return;
+  }
+  const recordList=DB.records.map(r=>`ID${r.id}: ${r.name} (${r.totalCs}cs)`).join('\n');
+  const mappingHints=Object.keys(DB.mappings).length>0?'已知對應：\n'+Object.entries(DB.mappings).map(([k,v])=>`"${k}" → ID${v}`).join('\n'):'';
+  const prompt=`分析出貨單，將品項對應到進口記錄。\n\n【出貨單CSV】\n${csv}\n\n【進口記錄】\n${recordList}\n\n${mappingHints}\n\n請解析品項總箱數並對應，只回答JSON：\n{"delivery_no":"","items":[{"delivery_name":"","total_cs":0,"matched_record_id":null,"confidence":"high/medium/low","reason":""}]}`;
+  try{
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1500,messages:[{role:'user',content:prompt}]})
+    });
+    const data=await resp.json();
+    const raw=data.content.map(c=>c.text||'').join('');
+    const result=JSON.parse(raw.replace(/```json|```/g,'').trim());
+    window._pendingDelivery={file:file.name,result,mo};
+    statusEl.innerHTML='';
+    renderMatchUI(result,file.name);
+    input.value='';
+  }catch(err){
+    statusEl.innerHTML=`<div class="msg msg-warn"><i class="ti ti-alert-triangle"></i>AI 比對失敗：${err.message}</div>`;
+    input.value='';
+  }
+}
+
+function renderMatchUI(result,fname){
+  const matchEl=document.getElementById('delivery-match');
+  const logList=getLogisticsPartners();
+  const dsList=getDownstreamPartners();
+  let logOpts='<option value="">— 不填 —</option>'+logList.map(p=>`<option value="${p.code}"${p.code==='F-005'?' selected':''}>${p.code}　${p.name}</option>`).join('');
+  let dsOpts='<option value="">— 不填 —</option>'+dsList.map(p=>`<option value="${p.code}"${p.code==='R-043'?' selected':''}>${p.code}　${p.name}</option>`).join('');
+  let html=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+    <div style="font-size:13px;font-weight:500">${fname} — 確認品項對應</div>
+    <button class="btn btn-primary" onclick="confirmDelivery()"><i class="ti ti-check"></i> 確認並儲存</button>
+  </div>
+  <div class="partner-grid" style="margin-bottom:12px">
+    <div class="partner-block"><label>物流業者</label><select id="del-logistics">${logOpts}</select></div>
+    <div class="partner-block"><label>下游業者</label><select id="del-downstream">${dsOpts}</select></div>
+  </div>
+  <div style="background:var(--bg2);border-radius:var(--radius);overflow:hidden;border:0.5px solid var(--border)">
+  <div class="match-row inv-row-header" style="font-size:11px"><div>出貨單品項</div><div></div><div>對應進口記錄</div><div>信心</div></div>`;
+  result.items.forEach((item,i)=>{
+    const conf=item.confidence;
+    const confBadge=conf==='high'?'badge-success':conf==='medium'?'badge-warn':'badge-danger';
+    let sel=`<select id="match-sel-${i}" class="match-sel"><option value="">— 無對應 —</option>`;
+    DB.records.forEach(r=>{sel+=`<option value="${r.id}"${r.id===item.matched_record_id?' selected':''}>${r.name}</option>`;});
+    sel+='</select>';
+    html+=`<div class="match-row">
+      <div><div style="font-weight:500">${item.delivery_name}</div><div class="tooltip-text">${item.total_cs} cs</div></div>
+      <div style="text-align:center;color:var(--text3);padding-top:4px"><i class="ti ti-arrow-right"></i></div>
+      <div>${sel}<div class="tooltip-text" style="margin-top:3px">${item.reason||''}</div></div>
+      <div style="padding-top:4px"><span class="badge ${confBadge}">${conf==='high'?'高':conf==='medium'?'中':'低'}</span></div>
+    </div>`;
+  });
+  html+=`</div>`;
+  matchEl.innerHTML=html;
+}
+
+function confirmDelivery(){
+  const pending=window._pendingDelivery;if(!pending)return;
+  const{file,result,mo}=pending;
+  const logCode=document.getElementById('del-logistics').value;
+  const dsCode=document.getElementById('del-downstream').value;
+  const lines=[];
+  result.items.forEach((item,i)=>{
+    const sel=document.getElementById(`match-sel-${i}`);
+    const recId=parseInt(sel.value);if(!recId)return;
+    const rec=DB.records.find(r=>r.id===recId);if(!rec)return;
+    const kgPerCs=rec.kgPerCs||(rec.totalKg&&rec.totalCs?rec.totalKg/rec.totalCs:0);
+    lines.push({recordId:recId,deliveryName:item.delivery_name,cs:item.total_cs,kg:item.total_cs*kgPerCs});
+    DB.mappings[item.delivery_name]=recId;
+  });
+  DB.deliveries.push({id:DB.nextId++,month:mo,filename:file,deliveryNo:result.delivery_no||file,logisticsCode:logCode,downstreamCode:dsCode,lines});
+  document.getElementById('delivery-match').innerHTML='';
+  window._pendingDelivery=null;
+  autoSave();renderAll();showSaveBar('出貨單已儲存');
+}
+
+function renderDeliveryHistory(){
+  const mo=getMonth();
+  const devs=DB.deliveries.filter(d=>d.month===mo);
+  const el=document.getElementById('delivery-history');
+  if(!devs.length){el.innerHTML='<div class="empty-state"><i class="ti ti-truck"></i>尚未上傳出貨單</div>';return;}
+  let html='<table><thead><tr><th>檔案</th><th>物流業者</th><th>下游業者</th><th style="text-align:right">總箱數</th><th></th></tr></thead><tbody>';
+  devs.forEach(d=>{
+    const total=d.lines.reduce((s,l)=>s+l.cs,0);
+    html+=`<tr>
+      <td style="font-weight:500">${d.filename}</td>
+      <td style="font-size:11px;color:var(--text2)">${partnerName(d.logisticsCode)}</td>
+      <td style="font-size:11px;color:var(--text2)">${partnerName(d.downstreamCode)}</td>
+      <td style="text-align:right">${total.toFixed(2)}</td>
+      <td><button class="btn btn-sm btn-danger" onclick="deleteDelivery(${d.id})"><i class="ti ti-trash" style="font-size:11px"></i></button></td>
+    </tr>`;
+  });
+  html+='</tbody></table>';el.innerHTML=html;
+}
+
+function deleteDelivery(id){
+  if(!confirm('確定移除？'))return;
+  DB.deliveries=DB.deliveries.filter(d=>d.id!==id);autoSave();renderAll();
+}
+
+// ── 手動出貨登錄 ──
+function showManualDeliveryForm(){
+  const f=document.getElementById('manual-delivery-form');
+  f.style.display='block';
+  const sel=document.getElementById('md-record');
+  sel.innerHTML='<option value="">— 選擇品項 —</option>';
+  DB.records.forEach(r=>{
+    const shipped=getShipped(r.id);
+    const rem=(r.totalCs-shipped).toFixed(2);
+    sel.innerHTML+=`<option value="${r.id}">${r.name}（剩 ${rem} cs）</option>`;
+  });
+  const logSel=document.getElementById('md-logistics');
+  const dsSel=document.getElementById('md-downstream');
+  logSel.innerHTML='<option value="">— 不填 —</option>'+getLogisticsPartners().map(p=>`<option value="${p.code}">${p.code}　${p.name}</option>`).join('');
+  dsSel.innerHTML='<option value="">— 不填 —</option>'+getDownstreamPartners().map(p=>`<option value="${p.code}">${p.code}　${p.name}</option>`).join('');
+  // Reset type to delivery
+  document.querySelector('input[name="md-type"][value="delivery"]').checked=true;
+  toggleMdType();
+  // Reset checkboxes
+  for(let i=1;i<=8;i++){document.getElementById(`md-sc${i}`).checked=false;}
+  updateSelfCategoryPreview();
+}
+
+function toggleMdType(){
+  const isSelf=document.querySelector('input[name="md-type"]:checked').value==='self';
+  document.getElementById('md-delivery-section').style.display=isSelf?'none':'block';
+  document.getElementById('md-self-section').style.display=isSelf?'block':'none';
+}
+
+function updateSelfCategoryPreview(){
+  let code='';
+  for(let i=1;i<=8;i++){code+=document.getElementById(`md-sc${i}`).checked?'1':'0';}
+  document.getElementById('md-sc-preview').textContent=code;
+}
+// Attach live preview to checkboxes after DOM ready
+document.addEventListener('DOMContentLoaded',()=>{
+  for(let i=1;i<=8;i++){
+    const cb=document.getElementById(`md-sc${i}`);
+    if(cb)cb.addEventListener('change',updateSelfCategoryPreview);
+  }
+});
+
+function hideManualDeliveryForm(){
+  document.getElementById('manual-delivery-form').style.display='none';
+}
+
+function saveManualDelivery(){
+  const recId=parseInt(document.getElementById('md-record').value);
+  if(!recId){alert('請選擇品項');return;}
+  const cs=parseFloat(document.getElementById('md-cs').value)||0;
+  if(!cs){alert('請輸入數量');return;}
+  const rec=DB.records.find(r=>r.id===recId);
+  const kgPerCs=rec?(rec.kgPerCs||(rec.totalKg&&rec.totalCs?rec.totalKg/rec.totalCs:0)):0;
+  const kgInput=parseFloat(document.getElementById('md-kg').value);
+  const kg=kgInput||cs*kgPerCs;
+  const type=document.querySelector('input[name="md-type"]:checked').value;
+  const logCode=type==='delivery'?document.getElementById('md-logistics').value:'';
+  const dsCode=type==='delivery'?document.getElementById('md-downstream').value:'';
+  let selfCategory='';
+  if(type==='self'){
+    for(let i=1;i<=8;i++){selfCategory+=document.getElementById(`md-sc${i}`).checked?'1':'0';}
+    if(selfCategory==='00000000'){alert('請至少選擇一種自用類別');return;}
+  }
+  DB.manualDeliveries.push({
+    id:DB.nextId++,month:getMonth(),recordId:recId,cs,kg,
+    type,logisticsCode:logCode,downstreamCode:dsCode,selfCategory
+  });
+  document.getElementById('md-cs').value='';
+  document.getElementById('md-kg').value='';
+  hideManualDeliveryForm();
+  autoSave();renderAll();showSaveBar(type==='self'?'自用已登錄':'出貨已登錄');
+}
+
+function deleteManualDelivery(id){
+  if(!confirm('確定刪除？'))return;
+  DB.manualDeliveries=DB.manualDeliveries.filter(d=>d.id!==id);autoSave();renderAll();
+}
+
+function renderManualDeliveryList(){
+  const mo=getMonth();
+  const devs=DB.manualDeliveries.filter(d=>d.month===mo);
+  const el=document.getElementById('manual-delivery-list');
+  if(!devs.length){el.innerHTML='<div class="empty-state"><i class="ti ti-edit"></i>尚未手動登錄出貨</div>';return;}
+  let html='<table><thead><tr><th>品項</th><th>類型</th><th>物流／自用類別</th><th>下游業者</th><th style="text-align:right">數量</th><th style="text-align:right">淨重(kg)</th><th></th></tr></thead><tbody>';
+  devs.forEach(d=>{
+    const rec=DB.records.find(r=>r.id===d.recordId);
+    const isSelf=d.type==='self';
+    const typeLabel=isSelf?'<span class="badge badge-warn">自用</span>':'<span class="badge badge-gray">出貨</span>';
+    const col3=isSelf?`<span style="font-family:monospace;font-size:11px">${d.selfCategory||''}</span>`:partnerName(d.logisticsCode);
+    const col4=isSelf?'—':partnerName(d.downstreamCode);
+    html+=`<tr>
+      <td style="font-weight:500">${rec?rec.name:`ID${d.recordId}`}</td>
+      <td>${typeLabel}</td>
+      <td style="font-size:11px;color:var(--text2)">${col3}</td>
+      <td style="font-size:11px;color:var(--text2)">${col4}</td>
+      <td style="text-align:right">${d.cs}</td>
+      <td style="text-align:right">${d.kg.toFixed(2)}</td>
+      <td><button class="btn btn-sm btn-danger" onclick="deleteManualDelivery(${d.id})"><i class="ti ti-trash" style="font-size:11px"></i></button></td>
+    </tr>`;
+  });
+  html+='</tbody></table>';el.innerHTML=html;
+}
+
+// ── 申報清單 ──
+function renderDeclare(){
+  const mo=getMonth();
+  document.getElementById('declare-title').textContent=`${mo} 申報清單`;
+  const el=document.getElementById('declare-list');
+  const rows=buildDeclareRows(mo);
+  if(!rows.length){el.innerHTML='<div class="empty-state"><i class="ti ti-clipboard-check"></i>本月尚無出貨記錄</div>';return;}
+  const missingBatch=rows.filter(r=>!r.batchNo).length;
+  let warn='';
+  if(missingBatch)warn=`<div class="msg msg-warn" style="margin-bottom:10px"><i class="ti ti-alert-triangle" style="flex-shrink:0"></i>有 ${missingBatch} 筆缺少 Invoice 批號，請至「進口記錄」補填。</div>`;
+  let html=warn+`<table style="table-layout:auto"><thead><tr>
+    <th>許可通知號碼</th><th>項次</th><th>品項</th><th>批號</th>
+    <th style="text-align:right">箱數(cs)</th><th style="text-align:right">淨重(kg)</th>
+    <th>物流業者</th><th>下游業者</th><th>銷售狀態</th>
+  </tr></thead><tbody>`;
+  rows.forEach(r=>{
+    const sold=r.soldOut;
+    html+=`<tr class="${sold?'sold-out-row':''}">
+      <td style="font-family:monospace;font-size:11px">${r.permitNo}</td>
+      <td style="color:var(--text3)">${r.itemNo}</td>
+      <td style="font-weight:500">${r.name}</td>
+      <td style="font-family:monospace;font-size:11px;color:${r.batchNo?'inherit':'var(--danger-text)'}">${r.batchNo||'⚠ 未填'}</td>
+      <td style="text-align:right">${r.cs}</td>
+      <td style="text-align:right">${r.kg.toFixed(2)}</td>
+      <td style="font-size:11px;color:var(--text2)">${r.logisticsCodes.join(', ')||'—'}</td>
+      <td style="font-size:11px;color:var(--text2)">${r.downstreamCodes.join(', ')||'—'}</td>
+      <td>${sold?'<span class="sold-pill"><i class="ti ti-check" style="font-size:10px"></i>已售完</span>':'<span class="badge badge-warn">未售完</span>'}</td>
+    </tr>`;
+  });
+  html+='</tbody></table>';el.innerHTML=html;
+}
+
+function buildDeclareRows(mo){
+  // Summary rows for display (one per record)
+  const rows=[];
+  DB.records.forEach(r=>{
+    const{cs,kg}=getMonthShipped(r.id,mo);
+    if(cs<=0)return;
+    const logCodes=new Set(),dsCodes=new Set();
+    DB.deliveries.filter(d=>d.month===mo).forEach(d=>{
+      if(d.lines.some(l=>l.recordId===r.id)){
+        if(d.logisticsCode)logCodes.add(d.logisticsCode);
+        if(d.downstreamCode)dsCodes.add(d.downstreamCode);
+      }
+    });
+    DB.manualDeliveries.filter(d=>d.month===mo&&d.recordId===r.id).forEach(d=>{
+      if(d.logisticsCode)logCodes.add(d.logisticsCode);
+      if(d.downstreamCode)dsCodes.add(d.downstreamCode);
+    });
+    rows.push({
+      permitNo:r.permitNo,declNo:r.declNo,itemNo:r.itemNo,name:r.name,
+      batchNo:r.batchNo||'',cs,kg,soldOut:isSoldOut(r),
+      logisticsCodes:[...logCodes],downstreamCodes:[...dsCodes]
+    });
+  });
+  return rows;
+}
+
+function buildXLSDeliveryLines(mo){
+  // Per-delivery breakdown for XLS export
+  // Returns {deliveryLines, selfUseLines} separated
+  const deliveryLines=[];
+  const selfUseLines=[];
+  DB.records.forEach(r=>{
+    // LOPIA-style deliveries (from uploaded Excel files)
+    DB.deliveries.filter(d=>d.month===mo).forEach(d=>{
+      d.lines.filter(l=>l.recordId===r.id).forEach(l=>{
+        if(l.cs<=0)return;
+        deliveryLines.push({
+          permitNo:r.permitNo,itemNo:r.itemNo,batchNo:r.batchNo||'',
+          cs:l.cs,kg:l.kg,
+          logisticsCode:d.logisticsCode||'',
+          downstreamCode:d.downstreamCode||''
+        });
+      });
+    });
+    // Manual deliveries (other clients or self-use)
+    DB.manualDeliveries.filter(d=>d.month===mo&&d.recordId===r.id).forEach(d=>{
+      if(d.cs<=0)return;
+      if(d.type==='self'){
+        selfUseLines.push({
+          permitNo:r.permitNo,itemNo:r.itemNo,batchNo:r.batchNo||'',
+          cs:d.cs,kg:d.kg,selfCategory:d.selfCategory||'00000000'
+        });
+      }else{
+        deliveryLines.push({
+          permitNo:r.permitNo,itemNo:r.itemNo,batchNo:r.batchNo||'',
+          cs:d.cs,kg:d.kg,
+          logisticsCode:d.logisticsCode||'',
+          downstreamCode:d.downstreamCode||''
+        });
+      }
+    });
+  });
+  return{deliveryLines,selfUseLines};
+}
+
+// ── 匯出申報 XLS ──
+function exportDeclarationXLS(){
+  const mo=getMonth();
+  const{deliveryLines,selfUseLines}=buildXLSDeliveryLines(mo);
+  if(!deliveryLines.length&&!selfUseLines.length){alert('本月無出貨或自用記錄');return;}
+
+  // Group delivery lines by permitNo+itemNo+batchNo for Sheet 1 totals
+  const groupKey=l=>`${l.permitNo}||${l.itemNo}||${l.batchNo}`;
+  const groups={};
+  deliveryLines.forEach(l=>{
+    const k=groupKey(l);
+    if(!groups[k])groups[k]={permitNo:l.permitNo,itemNo:l.itemNo,batchNo:l.batchNo,totalCs:0,totalKg:0,logCodes:new Set(),dsCodes:new Set(),selfKg:0};
+    groups[k].totalCs+=l.cs;
+    groups[k].totalKg+=l.kg;
+    if(l.logisticsCode)groups[k].logCodes.add(l.logisticsCode);
+    if(l.downstreamCode)groups[k].dsCodes.add(l.downstreamCode);
+  });
+  // Also add self-use into groups for Sheet 1 self-use flag
+  const selfGroups={};
+  selfUseLines.forEach(l=>{
+    const k=groupKey(l);
+    if(!selfGroups[k])selfGroups[k]={permitNo:l.permitNo,itemNo:l.itemNo,batchNo:l.batchNo,totalKg:0,selfCategory:l.selfCategory};
+    selfGroups[k].totalKg+=l.kg;
+  });
+  // Merge self-use into main groups (some permits may only have self-use)
+  Object.entries(selfGroups).forEach(([k,sg])=>{
+    if(!groups[k])groups[k]={permitNo:sg.permitNo,itemNo:sg.itemNo,batchNo:sg.batchNo,totalCs:0,totalKg:0,logCodes:new Set(),dsCodes:new Set(),selfKg:0,selfCategory:sg.selfCategory};
+    groups[k].selfKg=(groups[k].selfKg||0)+sg.totalKg;
+    groups[k].selfCategory=sg.selfCategory;
+  });
+
+  const s1=[['申報日期(必填)','申報日期流水號','輸入許可通知號碼(必填)','項次(必填)','批號(必填)','交貨總淨重(必填)','交貨總數量(必填)','退貨總淨重','交貨包裝規格','物流業者(必填)','下游業者(必填)','交貨備註']];
+  const s2=[['申報日期(必填)','申報日期流水號','輸入許可通知號碼(必填)','項次(必填)','批號(必填)','物流業者自編碼','物流業者群組名稱']];
+  const s3=[['申報日期(必填)','申報日期流水號','輸入許可通知號碼(必填)','項次(必填)','批號(必填)','下游業者自編碼(必填)','交貨淨重(必填)','交貨數量','退貨淨重']];
+  const s4=[['申報日期(必填)','申報日期流水號','輸入許可通知號碼(必填)','項次(必填)','批號(必填)','販售至消費者(必填)','販售至消費者總淨重','自用(必填)','自用總淨重','交貨資料自用類別','交貨資料其它自用品說明','工廠自用(必填)','交貨資料報廢(必填)','交貨資料報廢總淨重','交貨資料報廢總數量']];
+  const s5=[['申報日期(必填)','申報日期流水號','輸入許可通知號碼(必填)','項次(必填)','批號(必填)','工廠登錯字號(必填)','自用總淨重(必填)']];
+
+  // Sheet 1: one row per permit+item+batch
+  Object.values(groups).forEach(g=>{
+    const hasLog=g.logCodes.size>0;
+    const hasDs=g.dsCodes.size>0;
+    const hasSelf=(g.selfKg||0)>0;
+    s1.push([mo,null,g.permitNo,g.itemNo,g.batchNo,
+      parseFloat(g.totalKg.toFixed(3)),String(Math.round(g.totalCs)),
+      null,null,hasLog?'1':'0',hasDs?'1':'0',null]);
+    // Sheet 4: self-use row if needed
+    if(hasSelf){
+      s4.push([mo,null,g.permitNo,g.itemNo,g.batchNo,
+        '0',null,'1',parseFloat((g.selfKg||0).toFixed(3)),
+        g.selfCategory||'00000000',null,'0','0',null,null]);
+    }
+  });
+
+  // Sheet 2: one row per permit+item+batch per logistics partner
+  const logSeen=new Set();
+  deliveryLines.forEach(l=>{
+    if(!l.logisticsCode)return;
+    const k=`${l.permitNo}||${l.itemNo}||${l.batchNo}||${l.logisticsCode}`;
+    if(logSeen.has(k))return;logSeen.add(k);
+    s2.push([mo,null,l.permitNo,l.itemNo,l.batchNo,l.logisticsCode,null]);
+  });
+
+  // Sheet 3: one row per delivery line per downstream partner — exact kg per line
+  deliveryLines.forEach(l=>{
+    if(!l.downstreamCode)return;
+    s3.push([mo,null,l.permitNo,l.itemNo,l.batchNo,
+      l.downstreamCode,parseFloat(l.kg.toFixed(3)),null,null]);
+  });
+
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(s1),'交貨資料');
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(s2),'交貨資料物流業者');
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(s3),'交貨資料下游業者');
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(s4),'交貨資料其他');
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(s5),'交貨資料其他交貨工廠自用');
+  XLSX.writeFile(wb,`輸入業交貨資料批號_${mo.replace('/','')}.xls`);
+}
+
+function copyDeclare(){
+  const mo=getMonth();
+  let text=`${mo} 申報清單\n許可通知號碼\t項次\t品項\t批號\t箱數(cs)\t淨重(kg)\t物流業者\t下游業者\t銷售狀態\n`;
+  buildDeclareRows(mo).forEach(r=>{
+    text+=`${r.permitNo}\t${r.itemNo}\t${r.name}\t${r.batchNo}\t${r.cs}\t${r.kg.toFixed(2)}\t${r.logisticsCodes.join(',')}\t${r.downstreamCodes.join(',')}\t${r.soldOut?'已售完':'未售完'}\n`;
+  });
+  navigator.clipboard.writeText(text).then(()=>showSaveBar('已複製到剪貼簿'));
+}
+
+// ── 庫存 ──
+function toggleManualSoldOut(id){
+  if(DB.manualSoldOut[id])delete DB.manualSoldOut[id];
+  else DB.manualSoldOut[id]=true;
+  autoSave();renderAll();
+}
+
+function renderStock(){
+  const el=document.getElementById('stock-list');
+  const filter=document.getElementById('stock-filter').value;
+  if(!DB.records.length){el.innerHTML='<div class="empty-state"><i class="ti ti-box"></i>尚無庫存資料</div>';return;}
+  let recs=DB.records.filter(r=>{
+    const shipped=getShipped(r.id);const sold=isSoldOut(r);
+    if(filter==='soldout')return sold;
+    if(filter==='instock')return !sold&&shipped>0&&shipped<r.totalCs;
+    if(filter==='pending')return shipped===0;
+    return true;
+  });
+  if(!recs.length){el.innerHTML='<div class="empty-state"><i class="ti ti-filter"></i>此篩選條件下無資料</div>';return;}
+  let html=`<table style="table-layout:fixed"><colgroup><col style="width:14%"><col><col style="width:65px"><col style="width:65px"><col style="width:65px"><col style="width:90px"><col style="width:110px"></colgroup>
+  <thead><tr><th>許可通知號碼</th><th>品項名稱</th><th style="text-align:right">進口(cs)</th><th style="text-align:right">已出(cs)</th><th style="text-align:right">庫存(cs)</th><th>進度</th><th>申報網站狀態</th></tr></thead><tbody>`;
+  recs.forEach(r=>{
+    const shipped=getShipped(r.id);
+    const rem=parseFloat((r.totalCs-shipped).toFixed(3));
+    const pct=r.totalCs>0?Math.min(100,Math.round(shipped/r.totalCs*100)):0;
+    const autoSold=r.totalCs>0&&shipped>=r.totalCs;
+    const manualSold=!!DB.manualSoldOut[r.id];
+    const sold=autoSold||manualSold;
+    let statusHtml=sold
+      ?`<span class="sold-pill"><i class="ti ti-check" style="font-size:10px"></i>已售完</span>${manualSold&&!autoSold?` <button class="btn btn-sm" style="font-size:10px;height:22px;padding:0 6px;margin-left:4px" onclick="toggleManualSoldOut(${r.id})">取消</button>`:''}`
+      :`<button class="btn btn-sm btn-success" onclick="toggleManualSoldOut(${r.id})" style="font-size:10px;height:24px"><i class="ti ti-check" style="font-size:10px"></i> 標記已售完</button>`;
+    html+=`<tr class="${sold?'sold-out-row':''}">
+      <td style="font-family:monospace;font-size:10px;word-break:break-all">${r.permitNo}</td>
+      <td style="font-weight:500;font-size:12px">${r.name}</td>
+      <td style="text-align:right">${r.totalCs}</td>
+      <td style="text-align:right;color:${shipped>0?'var(--success-text)':'var(--text3)'}">${shipped.toFixed(2)}</td>
+      <td style="text-align:right;font-weight:500;color:${rem>0?'var(--warn-text)':'var(--text3)'}">${rem.toFixed(2)}</td>
+      <td><div style="display:flex;align-items:center;gap:6px">
+        <div class="progress-bar" style="flex:1"><div class="progress-fill" style="width:${pct}%"></div></div>
+        <span style="font-size:10px;color:var(--text3);min-width:28px">${pct}%</span>
+      </div></td>
+      <td>${statusHtml}</td>
+    </tr>`;
+  });
+  html+='</tbody></table>';el.innerHTML=html;
+}
+
+// ── 業者對照表 ──
+function loadPartnersFile(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=async e=>{
+    // try to convert xls first via in-memory read
+    try{
+      const wb=XLSX.read(e.target.result,{type:'array'});
+      const ws=wb.Sheets['交易對象']||wb.Sheets[wb.SheetNames[0]];
+      const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+      const partners=[];
+      rows.forEach((row,i)=>{
+        if(i===0)return;
+        const rel=String(row[0]||'').trim();
+        const code=String(row[5]||'').trim();
+        const name=String(row[7]||'').trim();
+        if(!code||!name)return;
+        // only logistics and downstream
+        if(['101000','001000','100000','110000','111000'].includes(rel)){
+          partners.push({rel,code,name});
+        }
+      });
+      DB.partners=partners;
+      autoSave();renderAll();
+      showSaveBar(`已匯入 ${partners.length} 筆業者`);
+    }catch(err){alert('匯入失敗：'+err.message);}
+  };
+  reader.readAsArrayBuffer(file);
+  input.value='';
+}
+
+function renderPartners(){
+  const el=document.getElementById('partners-list');
+  if(!DB.partners.length){el.innerHTML='<div class="empty-state"><i class="ti ti-users"></i>尚未匯入業者對照表</div>';return;}
+  const logs=getLogisticsPartners();
+  const ds=getDownstreamPartners();
+  let html=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">`;
+  html+=`<div><div class="section-title">物流業者（${logs.length}）</div>
+  <table><thead><tr><th style="width:80px">自編碼</th><th>名稱</th></tr></thead><tbody>`;
+  logs.forEach(p=>{html+=`<tr><td style="font-family:monospace;font-size:11px">${p.code}</td><td style="font-size:12px">${p.name}</td></tr>`;});
+  html+=`</tbody></table></div>`;
+  html+=`<div><div class="section-title">下游業者（${ds.length}）</div>
+  <table><thead><tr><th style="width:80px">自編碼</th><th>名稱</th></tr></thead><tbody>`;
+  ds.forEach(p=>{html+=`<tr><td style="font-family:monospace;font-size:11px">${p.code}</td><td style="font-size:12px">${p.name}</td></tr>`;});
+  html+=`</tbody></table></div></div>`;
+  el.innerHTML=html;
+}
+
+function showToast(msg){showSaveBar(msg);}
+
+loadData();
+</script>
+</body>
+</html>
