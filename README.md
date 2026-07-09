@@ -1,0 +1,1 @@
+# hiraseki-declaration
